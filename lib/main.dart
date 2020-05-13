@@ -37,23 +37,30 @@ class _MyHomePageState extends State<MyHomePage> {
   Marker marker;
   //Circle circle;
   GoogleMapController _controller;
-  DatabaseReference DBRef = FirebaseDatabase.instance.reference();
+  DatabaseReference DBRef = FirebaseDatabase.instance.reference(); //Firebase database reference
 
+
+  //Initial camera position on map
   static final CameraPosition initialLocation = CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),
     zoom: 14.4746,
   );
 
+
+  //set marker car icon on map
   Future<Uint8List> getMarker() async {
     ByteData byteData = await DefaultAssetBundle.of(context).load("assets/car_icon.png");
     return byteData.buffer.asUint8List();
   }
 
+  // update marker on map at realtime when the location gets updated
   void updateMarkerAndCircle(LocationData newLocalData, Uint8List imageData) {
+
     LatLng latlng = LatLng(newLocalData.latitude, newLocalData.longitude);
 
     this.setState(() {
 
+      //marker
       marker = Marker(
           markerId: MarkerId("home"),
           position: latlng,
@@ -66,23 +73,27 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  //get users current location
   void getCurrentLocation() async {
     try {
 
       Uint8List imageData = await getMarker();
       var location = await _locationTracker.getLocation();
+
       DBRef.child("user1").set({
         'lat':'latlng.latitude',
         'long':'latlng.longitude',
         'name':"user1"
       });
+
+      //update marker at the current location
       updateMarkerAndCircle(location, imageData);
 
       if (_locationSubscription != null) {
         _locationSubscription.cancel();
       }
 
-
+      //get the current updated location
       _locationSubscription = _locationTracker.onLocationChanged().listen((newLocalData) {
         if (_controller != null) {
           _controller.animateCamera(CameraUpdate.newCameraPosition(new CameraPosition(
@@ -91,6 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
               tilt: 0,
               zoom: 18.00)));
 
+          //mark it on map
           updateMarkerAndCircle(newLocalData, imageData);
         }
       });
@@ -104,6 +116,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
+    //stop location update
     if (_locationSubscription != null) {
       _locationSubscription.cancel();
     }
@@ -116,6 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
+      //Google Map view
       body: GoogleMap(
         mapType: MapType.normal,
         initialCameraPosition: initialLocation,
